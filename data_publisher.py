@@ -27,7 +27,7 @@ encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 70]  # The default value for IMWR
 # --- [START] Command line argument parsing --- --- --- --- --- ---
 parser = argparse.ArgumentParser(
 	description='Zenoh Publisher example')
-parser.add_argument('--peer', '-e', dest='peer',  # e.g. 140.113.193.134 (Little Boy)
+parser.add_argument('--peer', '-e', dest='peer',  # e.g. `-e tcp/192.168.1.10:7446` (to LittleBoy)
                     metavar='LOCATOR',
                     action='append',
                     type=str,

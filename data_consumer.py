@@ -27,7 +27,7 @@ parser.add_argument('--selector', '-s', dest='selector',
                     type=str,
                     help='selector.')
 parser.add_argument('--zmquri', dest='zmquri', default="tcp://*:5548", type=str, help='ZMQ URI')
-parser.add_argument('--listener', dest='listener', default="tcp/localhost:7446", type=str, help='Listener')
+parser.add_argument('--listener', '-l', dest='listener', default="tcp/localhost:7446", type=str, help='Listener')
 parser.add_argument('--pheight', dest='pheight', default=1080, type=int, help='Target height to publish')
 parser.add_argument('--zmq', dest='zmq', action='store_true', help="Enable ZMQ Sending")
 parser.set_defaults(zmq=False)
@@ -38,6 +38,7 @@ print(args)
 # Setup ZMQ Sender
 if args.zmq:
 	# it is enabled
+	enable_zmq = args.zmq
 	uri = args.zmquri
 	sender = imagezmq.ImageSender(connect_to=uri, REQ_REP=False)
 
