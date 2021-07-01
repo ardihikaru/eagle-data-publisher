@@ -37,7 +37,11 @@
 ## How to use
 1. Run Consumer service
 2. Run Publisher service (**this project**)
-    - Run sample: `python3 data_publisher.py -e tcp/localhost:7446 --cvout --resize`
+    - Sample script to run in the field trial:
+        - Popeye:
+            - Default: `$ python3 data_publisher.py -e tcp/192.168.1.11:7446 --resize`
+            - Resize Camera's resolution: `$ python3 data_publisher.py -e tcp/192.168.1.11:7446 --resize --pwidth 848 --pheight 480`
+    - Run sample: `$ python3 data_publisher.py -e tcp/localhost:7446 --cvout --resize`
         - Possible parameters:
             - `--cvout`: Show the real-time captured images; this can be omitted if you run this script with no monitor capability
             - `--resize`: Force to resize the captured image into **FullHD**; can be omitted
