@@ -1,6 +1,9 @@
 # Ignore editors
 .idea/
 
+# ignore tmp files
+bandwidth_usage.csv
+
 # GitHub Python GitIgnore ----------------------------------------------------------------------------------------------
 # Byte-compiled / optimized / DLL files
 __pycache__/
