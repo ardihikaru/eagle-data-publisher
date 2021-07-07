@@ -20,7 +20,8 @@
         - Check result: `$ python3 --version`
 
 ## Installation
-- Export pycore:
+1. Clone project: `$ git clone https://github.com/ardihikaru/eagle-data-publisher.git`
+2. Export pycore (can be done later):
     `export PYTHONPATH=:<root-path-to-project>/eagle-data-publisher/pycore`
     - The path may be different. :)
         - In Eaglestitch Server: 
@@ -29,10 +30,33 @@
              `export PYTHONPATH=:/home/popeye/devel/eagle-data-publisher/pycore`
         - In LittleBoy Server: 
              `export PYTHONPATH=:/home/s010132/devel/eagle-data-publisher/pycore`
-2. Install required library
+3. Install required library
     - Make sure to use latest version of `pip`:
         `$ pip3 install --upgrade pip`
-    - Install lib: `$ pip3 install -r requirements.txt`
+    - Install `Cython`: `$ pip3 install Cython`
+    - Install rest of the library: `$ pip3 install -r requirements.txt`
+    - OpenCV, it is better to install them manually.
+        - For personal use, you may use easy install by running this: `$ pip3 install opencv-python`
+        - Especially for `JetsonNano`, you should **NEVER** try to use **pip install**.
+            - Follow this [tutorial to do installation in JetsonNano](https://github.com/ardihikaru/eagle-data-publisher/blob/main/Jetson_Nano_Setup_for_ADS) 
+4. Finish. you may follow `Testing usage` or `How to use` section.
+
+## Testing usage
+1. Prepared two terminals
+2. Run Consumer:
+    - Add lib (if not added yet), e.g.: 
+        `$ export PYTHONPATH=:/home/ardi/devel/nctu/IBM-Lab/eagle-data-publisher/pycore`
+    - Run consumer:
+        `$ env RUST_LOG=debug python3 data_consumer.py -l tcp/localhost:7446`
+            - If you try them in the same PC, you can use `localhost`
+            - If you use to test them to PubSub with different PCs, change them to **IP of the Consumer**
+3. Run Publisher
+    - Add lib (if not added yet), e.g.: 
+        `$ export PYTHONPATH=:/home/ardi/devel/nctu/IBM-Lab/eagle-data-publisher/pycore`
+    - Run publisher:
+        `$ env RUST_LOG=debug python3 data_publisher.py -e tcp/localhost:7446 --resize`
+            - If you try them in the same PC, you can use `localhost`
+            - If you use to test them to PubSub with different PCs, change them to **IP of the Consumer**
 
 ## How to use
 1. Run Consumer service
@@ -74,3 +98,21 @@
                                 Interval: Discrete 0.033s (30.000 fps)  
                   ```
                   - Please **ONLY Focus on the format** `YUYV`. :)
+
+## MISC
+- Change python version; e.g. from `python3.6` into `python3.8`
+    - Install python3.8: `$ sudo apt install python3.8`
+    - Install venv (optional): `$ apt install python3.8-venv`
+    - Install python3.8 dev: `$ sudo apt-get install python3.8-dev`
+    - Change alternative: `$ sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1`
+        - It will get response as follows:
+            ```
+            update-alternatives: using /usr/bin/python3.8 to provide /usr/bin/python3 (python3) in auto mode
+            ```
+    - Set: `$ sudo update-alternatives --config python3`
+        - It will get response as follows:
+            ```
+            There is only one alternative in link group python3 (providing /usr/bin/python3): /usr/bin/python3.8
+            Nothing to configure.
+            ```
+    - Check result: `$ python3 --version`
