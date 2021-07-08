@@ -53,10 +53,19 @@
 3. Run Publisher
     - Add lib (if not added yet), e.g.: 
         `$ export PYTHONPATH=:/home/ardi/devel/nctu/IBM-Lab/eagle-data-publisher/pycore`
-    - Run publisher:
-        `$ env RUST_LOG=debug python3 data_publisher.py -e tcp/localhost:7446 --resize`
-            - If you try them in the same PC, you can use `localhost`
-            - If you use to test them to PubSub with different PCs, change them to **IP of the Consumer**
+    - Run publisher: `$ env RUST_LOG=debug python3 data_publisher.py -e tcp/localhost:7446 --resize`
+        - If you try them in the same PC, you can use `localhost`
+        - If you use to test them to PubSub with different PCs, change them to **IP of the Consumer**
+        - By default, it read your local camera (video0).
+        - If you want to extract frames from a video file, use following command:
+            `$ env RUST_LOG=debug python3 data_publisher.py -e tcp/localhost:7446 --resize -v >your_video_path>`
+        - if you want to resize the video property, let say, to FullHD, follow this steps:
+            - Run this to know possible resolution and its FPS (In Linux only):
+                `$ v4l2-ctl --list-formats-ext`
+            - To apply the config, you can try following command:
+              ```
+              $ env RUST_LOG=debug python3 data_publisher.py -e tcp/localhost:7446 --resize --pwidth 1920 --pheight 1080 -v >your_video_path>
+              ```
 
 ## How to use
 1. Run Consumer service
