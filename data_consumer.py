@@ -1,3 +1,14 @@
+# Import PYTHONPATH first
+import sys
+import os
+from dotenv import load_dotenv, find_dotenv
+# load `.env` file first!
+load_dotenv(find_dotenv())
+PYTHONPATH = os.getenv("PYTHONPATH")  # load PYTHONPATH
+# add to PYTHONPATH only if the provided folder exist
+if os.path.isdir(PYTHONPATH):
+	sys.path.append(PYTHONPATH)
+
 from eagle_zenoh.zenoh_lib.zenoh_net_subscriber import ZenohNetSubscriber
 import sys
 import cv2
