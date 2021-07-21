@@ -1,3 +1,14 @@
+# Import PYTHONPATH first
+import sys
+import os
+from dotenv import load_dotenv, find_dotenv
+# load `.env` file first!
+load_dotenv(find_dotenv())
+PYTHONPATH = os.getenv("PYTHONPATH")  # load PYTHONPATH
+# add to PYTHONPATH only if the provided folder exist
+if os.path.isdir(PYTHONPATH):
+	sys.path.append(PYTHONPATH)
+
 from eagle_zenoh.zenoh_lib.zenoh_net_publisher import ZenohNetPublisher
 import sys
 import time
@@ -13,10 +24,6 @@ from eagle_zenoh.extras.functions import humanbytes as fsize
 from eagle_zenoh.zenoh_lib.functions import encrypt_str, get_img_fsize_in_float
 import csv
 import os
-from dotenv import load_dotenv, find_dotenv
-
-# IMPORTANT: Load `.env` file
-load_dotenv(find_dotenv())
 
 # PATH TO Save CSV File
 CSV_FILE_PATH = "./bandwidth_usage.csv"

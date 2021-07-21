@@ -21,7 +21,7 @@
 
 ## Installation
 1. Clone project: `$ git clone https://github.com/ardihikaru/eagle-data-publisher.git`
-2. Install required library
+3. Install required library
     - Make sure to use latest version of `pip`:
         `$ pip3 install --upgrade pip`
     - Install `Cython`: `$ pip3 install Cython`
