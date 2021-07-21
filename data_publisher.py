@@ -13,6 +13,10 @@ from eagle_zenoh.extras.functions import humanbytes as fsize
 from eagle_zenoh.zenoh_lib.functions import encrypt_str, get_img_fsize_in_float
 import csv
 import os
+from dotenv import load_dotenv, find_dotenv
+
+# IMPORTANT: Load `.env` file
+load_dotenv(find_dotenv())
 
 # PATH TO Save CSV File
 CSV_FILE_PATH = "./bandwidth_usage.csv"
