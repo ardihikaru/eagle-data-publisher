@@ -53,6 +53,7 @@ parser.add_argument('--video', '-v', dest='video',
                     help='The name of the resource to publish.')
 parser.add_argument('--pwidth', dest='pwidth', default=1920, type=int, help='Target width to publish')
 parser.add_argument('--pheight', dest='pheight', default=1080, type=int, help='Target height to publish')
+parser.add_argument('--droneid', dest='droneid', default="1", type=str, help='Drone ID')
 parser.add_argument('--cvout', dest='cvout', action='store_true', help="Use CV Out")
 parser.add_argument('--resize', dest='resize', action='store_true', help="Force resize to FullHD")
 parser.set_defaults(cvout=False)
@@ -114,7 +115,7 @@ if _enable_cv_out:
 _frame_id = 0
 
 # Extra information (to be tagged into the frame)
-int_drone_id = encrypt_str("1")  # contains 1 extra slot
+int_drone_id = encrypt_str(args.droneid)  # contains 1 extra slot
 extra_len = 8  # contains 1 extra slot; another one slot is from `tagged_data_len` variable
 
 # create an empty array
