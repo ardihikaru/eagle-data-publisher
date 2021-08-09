@@ -1,3 +1,8 @@
+# Build: `$ docker build -t 5g-dive/eagle/pubsub:1.0 .`
+# Run: `$ docker run --name pub-svc --rm -it --network host 5g-dive/eagle/pubsub:1.0`
+# Run: `$ docker run --name sub-svc --rm -it --network host 5g-dive/eagle/pubsub:1.0`
+# python3 data_publisher.py -e tcp/localhost:7446 --resize -v /app/videos/customTest_MIRC-Roadside-20s.mp4
+
 # FROM 5g-dive/eagleeye/nvidia-gpu-opencv:2.4
 FROM 5g-dive/eagleeye/core-service:2.4
 MAINTAINER NCTU Team (mfardiansyah.eed08g@nctu.edu.tw, timothywilliam.cs06g@g2.nctu.edu.tw)
@@ -28,6 +33,8 @@ RUN set -ex \
 # Application
 COPY ./data_consumer.py /app/data_consumer.py
 COPY ./data_publisher.py /app/data_publisher.py
+RUN mkdir -p /app/videos
+COPY ./data/videos /app/videos
 COPY ./pycore /pycore
 ENV PYTHONPATH "${PYTHONPATH}:/pycore"
 
