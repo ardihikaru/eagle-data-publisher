@@ -21,15 +21,6 @@
 
 ## Installation
 1. Clone project: `$ git clone https://github.com/ardihikaru/eagle-data-publisher.git`
-2. Export pycore (can be done later):
-    `export PYTHONPATH=:<root-path-to-project>/eagle-data-publisher/pycore`
-    - The path may be different. :)
-        - In Eaglestitch Server: 
-             `export PYTHONPATH=:/home/eagles/devel/eagle-data-publisher/pycore`
-        - In Popeye Server: 
-             `export PYTHONPATH=:/home/popeye/devel/eagle-data-publisher/pycore`
-        - In LittleBoy Server: 
-             `export PYTHONPATH=:/home/s010132/devel/eagle-data-publisher/pycore`
 3. Install required library
     - Make sure to use latest version of `pip`:
         `$ pip3 install --upgrade pip`
@@ -44,19 +35,24 @@
 ## Testing usage
 1. Prepared two terminals
 2. Run Consumer:
-    - Add lib (if not added yet), e.g.: 
-        `$ export PYTHONPATH=:/home/ardi/devel/nctu/IBM-Lab/eagle-data-publisher/pycore`
     - Run consumer:
         `$ env RUST_LOG=debug python3 data_consumer.py -l tcp/localhost:7446`
             - If you try them in the same PC, you can use `localhost`
             - If you use to test them to PubSub with different PCs, change them to **IP of the Consumer**
 3. Run Publisher
-    - Add lib (if not added yet), e.g.: 
-        `$ export PYTHONPATH=:/home/ardi/devel/nctu/IBM-Lab/eagle-data-publisher/pycore`
-    - Run publisher:
-        `$ env RUST_LOG=debug python3 data_publisher.py -e tcp/localhost:7446 --resize`
-            - If you try them in the same PC, you can use `localhost`
-            - If you use to test them to PubSub with different PCs, change them to **IP of the Consumer**
+    - Run publisher: `$ env RUST_LOG=debug python3 data_publisher.py -e tcp/localhost:7446 --resize`
+        - If you try them in the same PC, you can use `localhost`
+        - If you use to test them to PubSub with different PCs, change them to **IP of the Consumer**
+        - By default, it read your local camera (video0).
+        - If you want to extract frames from a video file, use following command:
+            `$ env RUST_LOG=debug python3 data_publisher.py -e tcp/localhost:7446 --resize -v >your_video_path>`
+        - if you want to resize the video property, let say, to FullHD, follow this steps:
+            - Run this to know possible resolution and its FPS (In Linux only):
+                `$ v4l2-ctl --list-formats-ext`
+            - To apply the config, you can try following command:
+              ```
+              $ env RUST_LOG=debug python3 data_publisher.py -e tcp/localhost:7446 --resize --pwidth 1920 --pheight 1080 -v >your_video_path>
+              ```
 
 ## How to use
 1. Run Consumer service

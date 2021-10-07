@@ -1,6 +1,12 @@
 # Ignore editors
 .idea/
 
+# exclude everything inside specific folders
+data/*
+
+# force to pull
+!data/.gitkeep
+
 # ignore tmp files
 bandwidth_usage.csv
 

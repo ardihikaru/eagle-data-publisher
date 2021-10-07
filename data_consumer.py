@@ -1,3 +1,14 @@
+# Import PYTHONPATH first
+import sys
+import os
+from dotenv import load_dotenv, find_dotenv
+# load `.env` file first!
+load_dotenv(find_dotenv())
+PYTHONPATH = os.getenv("PYTHONPATH")  # load PYTHONPATH
+# add to PYTHONPATH only if the provided folder exist
+if os.path.isdir(PYTHONPATH):
+	sys.path.append(PYTHONPATH)
+
 from eagle_zenoh.zenoh_lib.zenoh_net_subscriber import ZenohNetSubscriber
 import sys
 import cv2
@@ -61,6 +72,14 @@ def listener_v2(consumed_data):
 	global uri
 	global sender
 
+	# see opencv docs for info on -1 parameter
+	# print(" >>>> SHAPE: ", img_info["raw_img"].shape)
+
+	decompressed_img = cv2.imdecode(img_info["raw_img"], 1)  # decompress
+	# print(" >>>> SHAPE: ", decompressed_img.shape)
+	cv2.imshow("WINDOW_NAME", decompressed_img)  # display images 1 window per sent_from
+	cv2.waitKey(1)
+
 	# print(" --- ")
 	#
 	# cv.imshow("window_title", img_info["img"])
@@ -80,7 +99,8 @@ def listener_v2(consumed_data):
 		L.warning(">>> Sending frame-{} ..".format(frame_id))
 		t0_zmq = time.time()
 		zmq_id = str(frame_id) + "-" + str(t0_zmq)
-		sender.send_image(zmq_id, img_info["img"])
+		# sender.send_image(zmq_id, img_info["img"])
+		sender.send_image(zmq_id, img_info["raw_img"])
 		t1_zmq = (time.time() - t0_zmq) * 1000
 		L.warning('Latency [Send imagezmq] of frame-%s: (%.5fms)' % (str(frame_id), t1_zmq))
 	L.warning("")
