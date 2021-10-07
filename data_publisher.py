@@ -32,9 +32,6 @@ CSV_FILE_PATH = "./bandwidth_usage.csv"
 FULLHD_WIDTH = 1920
 FULLHD_HEIGHT = 1080
 
-# Encoding parameter
-encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 70]  # The default value for IMWRITE_JPEG_QUALITY is 95
-
 # --- [START] Command line argument parsing --- --- --- --- --- ---
 parser = argparse.ArgumentParser(
 	description='Zenoh Publisher example')
@@ -58,6 +55,9 @@ parser.add_argument('--cvout', dest='cvout', action='store_true', help="Use CV O
 parser.add_argument('--resize', dest='resize', action='store_true', help="Force resize to FullHD")
 parser.set_defaults(cvout=False)
 parser.set_defaults(resize=False)
+# default
+parser.add_argument('--maxframe', dest='maxframe', default=9999999999, type=int, help='Target max frame to publish')
+parser.add_argument('--quality', dest='quality', default=70, type=int, help='Encoding quality')
 
 args = parser.parse_args()
 print(args)
@@ -69,6 +69,9 @@ L = logging.getLogger(__name__)
 
 
 ###
+
+# Encoding parameter
+encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), args.quality]  # The default value for IMWRITE_JPEG_QUALITY is 95
 
 peer = args.peer
 if peer is not None:
@@ -101,6 +104,12 @@ published_height, published_weight = args.pheight, args.pwidth  # target width a
 cam_weight, cam_height = None, None  # default detected width and height
 
 cap = cv2.VideoCapture(video_path)
+
+# Source: https://stackoverflow.com/questions/61202978/how-to-explicitly-access-mjpeg-backend-for-videocapture-in-opencv
+# availableBackends = [cv2.videoio_registry.getBackendName(b) for b in cv2.videoio_registry.getBackends()]
+# print(availableBackends)
+#
+# print('cv2.CAP_OPENCV_MJPEG = ' + str(cv2.CAP_OPENCV_MJPEG))
 
 # change the image property
 # use `$ v4l2-ctl --list-formats-ext` to check the available format!
@@ -201,6 +210,25 @@ try:
 			if _enable_cv_out:
 				cv2.imshow(window_title, frame)
 			print()
+
+			if _frame_id == args.maxframe:
+				L.warning("[STOPPED by MAX_FRAME] Start storing CSV Files")
+				# if file exist, delete it first!
+				if os.path.isfile(CSV_FILE_PATH):
+					os.remove(CSV_FILE_PATH)
+
+				# # open the file in the write mode
+				with open(CSV_FILE_PATH, 'w', encoding='UTF8', newline='') as f:
+					# create the csv writer
+					writer = csv.writer(f)
+
+					# write the header
+					writer.writerow(bw_usage_header)
+
+					# write a row to the csv file
+					writer.writerows(bw_usage)
+				exit(0)
+
 		except Exception as e:
 			print("No more frame to show: `{}`".format(e))
 			break

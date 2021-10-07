@@ -60,7 +60,7 @@ def extract_compressed_tagged_img(consumed_data):
 
 	# calculate zenoh pubsub
 	zenoh_pubsub_latency = (t1_zenoh_pubsub - t0_zenoh_pubsub) * 1000
-	L.warning(('[%s][Frame-{}] Latency Zenoh Comm. PubSub (%.3f ms) '.format(frame_id) % ("ZENOH CONSUMER",
+	L.warning(('[%s][DroneID-{}][Frame-{}] Latency Zenoh Comm. PubSub (%.3f ms) '.format(drone_id, frame_id) % ("ZENOH CONSUMER",
 																						  zenoh_pubsub_latency)))
 
 	# popping tagged information
@@ -72,7 +72,10 @@ def extract_compressed_tagged_img(consumed_data):
 	# IMPORTANT: value `6` is the value of
 	# decoded_data = decoded_data.reshape(decoded_data_len - 6, 1)
 	# print(" ## extra_tag_len:", type(extra_tag_len), extra_tag_len)
+	t0_img_extraction = time.time()
 	decoded_data = decoded_data.reshape(decoded_data_len - extra_tag_len, 1)
+	t1_img_extraction = (time.time() - t0_img_extraction) * 1000
+	L.warning(('[%s] Latency Image reshape (%.3f ms) ' % ("ZENOH CONSUMER", t1_img_extraction)))
 
 	# print(" ----- NEWWWW SHAPE decoded_data:", decoded_data.shape)
 	# print(" ##### decoded_data[-1][0] = ", decoded_data[-1][0])  # tagged_data_len
@@ -87,17 +90,17 @@ def extract_compressed_tagged_img(consumed_data):
 	L.warning(('[%s] Latency Image Extraction (%.3f ms) ' % ("ZENOH CONSUMER", t1_img_extraction)))
 
 	# Image de-compression (restore back into FullHD)
-	t0_decompress_img = time.time()
-	# print(" ### SHAPE: decoded_img = ", decoded_img.shape)
-	deimg_len = list(extracted_cimg.shape)[0]
-	# print(" ----- deimg_len:", deimg_len)
-	decoded_img = extracted_cimg.reshape(deimg_len, 1)
-	# print(" ### SHAPE: decoded_img = ", decoded_img.shape, type(decoded_img), type(decoded_img[0][0]))
-	decompressed_img = cv2.imdecode(decoded_img, 1)  # decompress
-	# print(" ----- SHAPE decompressed_img:", decompressed_img.shape)
-	t1_decompress_img = (time.time() - t0_decompress_img) * 1000
-	L.warning(('[%s] Latency COMPRESSING IMG (%.3f ms)' % ("ZENOH CONSUMER", img_compr_lat)))
-	L.warning(('[%s] Latency DE-COMPRESSING IMG (%.3f ms)' % ("ZENOH CONSUMER", t1_decompress_img)))
+	# t0_decompress_img = time.time()
+	# # print(" ### SHAPE: decoded_img = ", decoded_img.shape)
+	# deimg_len = list(extracted_cimg.shape)[0]
+	# # print(" ----- deimg_len:", deimg_len)
+	# decoded_img = extracted_cimg.reshape(deimg_len, 1)
+	# # print(" ### SHAPE: decoded_img = ", decoded_img.shape, type(decoded_img), type(decoded_img[0][0]))
+	# decompressed_img = cv2.imdecode(decoded_img, 1)  # decompress
+	# # print(" ----- SHAPE decompressed_img:", decompressed_img.shape)
+	# t1_decompress_img = (time.time() - t0_decompress_img) * 1000
+	# L.warning(('[%s] Latency COMPRESSING IMG (%.3f ms)' % ("ZENOH CONSUMER", img_compr_lat)))
+	# L.warning(('[%s] Latency DE-COMPRESSING IMG (%.3f ms)' % ("ZENOH CONSUMER", t1_decompress_img)))
 	L.warning("")
 
 	# cv2.imwrite("decompressed_img.jpg", decompressed_img)
@@ -108,7 +111,8 @@ def extract_compressed_tagged_img(consumed_data):
 		"decoding_payload": t1_decode,
 		"clean_decoded_payload": t1_non_img_cleaning,
 		"extract_img_data": t1_img_extraction,
-		"decompress_img": t1_decompress_img,
+		# "decompress_img": t1_decompress_img,
+		"decompress_img": 0.0,
 		"zenoh_pubsub": zenoh_pubsub_latency,
 		"compress_img": img_compr_lat,
 	}
@@ -116,7 +120,9 @@ def extract_compressed_tagged_img(consumed_data):
 	# decode data
 	img_info = {
 		"id": drone_id,
-		"img": decompressed_img,
+		# "img": decompressed_img,
+		"img": None,
+		"raw_img": extracted_cimg,
 		"timestamp": t0_zenoh_pubsub,
 		"frame_id": frame_id,
 	}
