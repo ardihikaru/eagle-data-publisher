@@ -9,6 +9,7 @@ data/*
 
 # ignore tmp files
 bandwidth_usage.csv
+mbits_per_second.csv
 
 # GitHub Python GitIgnore ----------------------------------------------------------------------------------------------
 # Byte-compiled / optimized / DLL files
