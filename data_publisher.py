@@ -1,3 +1,5 @@
+# cp bandwidth_usage.csv ~/Documents/PAPER_DDP/bandwidth_usage_Q=32.csv
+# cp mbits_per_second.csv ~/Documents/PAPER_DDP/mbits_per_second_Q=32.csv
 # Import PYTHONPATH first
 import sys
 import os
@@ -27,6 +29,7 @@ import os
 
 # PATH TO Save CSV File
 CSV_FILE_PATH = "./bandwidth_usage.csv"
+CSV_FILE_PATH_MBITS = "./mbits_per_second.csv"
 
 # FullHD Format; fixed value, as per required in 5G-DIVE Project
 FULLHD_WIDTH = 1920
@@ -128,11 +131,17 @@ int_drone_id = encrypt_str(args.droneid)  # contains 1 extra slot
 extra_len = 8  # contains 1 extra slot; another one slot is from `tagged_data_len` variable
 
 # create an empty array
-bw_usage_header = ['FrameID', 'Uncompressed', 'Compressed']
+bw_usage_header = ['FrameID', 'Uncompressed', 'Compressed_Mbytes', 'Compressed_Mbits_q={}'.format(args.quality)]
 bw_usage = []
-bw_usage_compressed = []
+
+mbits_per_sec_header = ['Time_t', 'FPS', 'AVG_Mbits_per_second_q={}'.format(args.quality),
+						'SUM_Mbits_per_second_q={}'.format(args.quality)]
+mbits_per_sec = []
 
 try:
+	tmp_mbits = 0  # will reset after modulus
+	time_t = 1  # start from time-t = 1
+	total_frames = 1
 	while cap.isOpened():
 		_frame_id += 1
 
@@ -155,8 +164,13 @@ try:
 
 			t0_decoding = time.time()
 			# resize the frame; Default VGA (640 x 480) for Laptop camera
+			t0_img_resizer = time.time()
 			if cam_weight != FULLHD_WIDTH and args.resize:
 				frame = cv2.resize(frame, (FULLHD_WIDTH, FULLHD_HEIGHT))
+			t1_img_resizer = (time.time() - t0_img_resizer) * 1000
+			t1_img_resizer = round(t1_img_resizer, 3)
+			L.warning(('[frame-{}][%s] Latency Image Resizing to FullHD (%.3f ms) '.format(_frame_id) % (
+				datetime.now().strftime("%H:%M:%S"), t1_img_resizer)))
 
 			L.warning("[frame-{}] ## Final image SHAPE: {}".format(_frame_id, frame.shape))
 			# compress image
@@ -198,8 +212,23 @@ try:
 			L.warning(('[frame-{}][%s] Latency Image Taging (%.3f ms) '.format(_frame_id) % (datetime.now().strftime("%H:%M:%S"), t1_tag_extraction)))
 
 			img_size_compressed, ext = get_img_fsize_in_float(val.nbytes)
-			L.warning("[frame-{}] ## Image Size COMPRESSED + TAGGED: {} {}".format(_frame_id, img_size_compressed, ext))
-			bw_usage.append([_frame_id, img_size, img_size_compressed])
+			# FYI: 1 MB = 8 Mbit
+			img_size_compressed = round(img_size_compressed, 2)
+			img_size_compressed_mbit = round((img_size_compressed * 8), 2)
+			L.warning("[frame-{}] ## Image Size COMPRESSED + TAGGED: {} {} ({} Mbits)".format(_frame_id, img_size_compressed, ext, img_size_compressed_mbit))
+			bw_usage.append([_frame_id, img_size, img_size_compressed, img_size_compressed_mbit])
+
+			# accumulate and append Mbits
+			if _frame_id % 30 == 0:
+				avg_mbits = round((tmp_mbits / 30), 2)
+				mbits_per_sec.append([time_t, total_frames, avg_mbits, tmp_mbits])
+				time_t += 1
+				tmp_mbits = 0  # reset to Zero again
+				total_frames = 1  # reset to One again
+			else:
+				tmp_mbits += img_size_compressed_mbit
+				tmp_mbits = round(tmp_mbits, 2)
+				total_frames += 1
 
 			# publish data
 			z_svc.publish(
@@ -216,6 +245,13 @@ try:
 				# if file exist, delete it first!
 				if os.path.isfile(CSV_FILE_PATH):
 					os.remove(CSV_FILE_PATH)
+				if os.path.isfile(CSV_FILE_PATH_MBITS):
+					os.remove(CSV_FILE_PATH_MBITS)
+
+				# special case, if frame extraction is stopped before mod 30, summary any accumulated data
+				if _frame_id % 30 != 0:
+					avg_mbits = round((tmp_mbits / 30), 2)
+					mbits_per_sec.append([time_t, total_frames, avg_mbits, tmp_mbits])
 
 				# # open the file in the write mode
 				with open(CSV_FILE_PATH, 'w', encoding='UTF8', newline='') as f:
@@ -227,6 +263,17 @@ try:
 
 					# write a row to the csv file
 					writer.writerows(bw_usage)
+
+				# # open the file in the write mode
+				with open(CSV_FILE_PATH_MBITS, 'w', encoding='UTF8', newline='') as f:
+					# create the csv writer
+					writer = csv.writer(f)
+
+					# write the header
+					writer.writerow(mbits_per_sec_header)
+
+					# write a row to the csv file
+					writer.writerows(mbits_per_sec)
 				exit(0)
 
 		except Exception as e:
