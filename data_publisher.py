@@ -11,21 +11,20 @@ PYTHONPATH = os.getenv("PYTHONPATH")  # load PYTHONPATH
 if os.path.isdir(PYTHONPATH):
 	sys.path.append(PYTHONPATH)
 
-from eagle_zenoh.zenoh_lib.zenoh_net_publisher import ZenohNetPublisher
 import sys
 import time
 from datetime import datetime
 import numpy as np
 import cv2
 import simplejson as json
-from enum import Enum
 import logging
 import argparse
 # from hurry.filesize import size as fsizeb
 from eagle_zenoh.extras.functions import humanbytes as fsize
 from eagle_zenoh.zenoh_lib.functions import encrypt_str, get_img_fsize_in_float
-import csv
 import os
+from edp.utils import data_transmission_mode, csv_writer
+from edp.publisher import Publisher
 
 # PATH TO Save CSV File
 CSV_FILE_PATH = "./bandwidth_usage.csv"
@@ -38,6 +37,8 @@ FULLHD_HEIGHT = 1080
 # --- [START] Command line argument parsing --- --- --- --- --- ---
 parser = argparse.ArgumentParser(
 	description='Zenoh Publisher example')
+# Note: ImageZMQ and other publisher will use this argument as the URL Path
+# e.g. for ImageZMQ, peer=`tcp://*:5548`
 parser.add_argument('--peer', '-e', dest='peer',  # e.g. `-e tcp/192.168.1.10:7446` (to LittleBoy)
                     metavar='LOCATOR',
                     action='append',
@@ -61,6 +62,7 @@ parser.set_defaults(resize=False)
 # default
 parser.add_argument('--maxframe', dest='maxframe', default=9999999999, type=int, help='Target max frame to publish')
 parser.add_argument('--quality', dest='quality', default=70, type=int, help='Encoding quality')
+parser.add_argument('--tmode', dest='tmode', default="ZENOH", type=str, help='Data transmission mode')
 
 args = parser.parse_args()
 print(args)
@@ -73,12 +75,23 @@ L = logging.getLogger(__name__)
 
 ###
 
+def validate_transmission_mode(tmode):
+	if tmode not in data_transmission_mode:
+		return False
+
+	return True
+
+
 # Encoding parameter
 encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), args.quality]  # The default value for IMWRITE_JPEG_QUALITY is 95
 
-peer = args.peer
-if peer is not None:
-	peer = ",".join(args.peer)
+# validate data tranmission mode
+if not validate_transmission_mode(args.tmode):
+	L.error("Invalid data transmission mode (={})".format(args.tmode))
+	exit(0)
+
+# build publisher instance
+publisher = Publisher(args)
 
 video_path = args.video
 if video_path == "0":
@@ -87,19 +100,8 @@ if video_path == "0":
 # Enable / disable cvout
 _enable_cv_out = args.cvout
 
-# configure zenoh service
-path = args.path
-z_svc = ZenohNetPublisher(
-	_path=path, _session_type="PUBLISHER", _peer=peer
-)
-z_svc.init_connection()
-
-# register and collect publisher object
-z_svc.register()
-publisher = z_svc.get_publisher()
-
-#########################
-# Zenoh related variables
+# Initialize publisher configuration setup
+publisher.initialize()
 
 window_title = "img-data-publisher"
 
@@ -231,10 +233,7 @@ try:
 				total_frames += 1
 
 			# publish data
-			z_svc.publish(
-				_val=val,
-				_itype=itype,
-			)
+			publisher.publish(itype, val)
 
 			if _enable_cv_out:
 				cv2.imshow(window_title, frame)
@@ -253,27 +252,11 @@ try:
 					avg_mbits = round((tmp_mbits / 30), 2)
 					mbits_per_sec.append([time_t, total_frames, avg_mbits, tmp_mbits])
 
-				# # open the file in the write mode
-				with open(CSV_FILE_PATH, 'w', encoding='UTF8', newline='') as f:
-					# create the csv writer
-					writer = csv.writer(f)
+				# write to csv file: bandwidth usage
+				csv_writer(CSV_FILE_PATH, bw_usage_header, bw_usage)
 
-					# write the header
-					writer.writerow(bw_usage_header)
-
-					# write a row to the csv file
-					writer.writerows(bw_usage)
-
-				# # open the file in the write mode
-				with open(CSV_FILE_PATH_MBITS, 'w', encoding='UTF8', newline='') as f:
-					# create the csv writer
-					writer = csv.writer(f)
-
-					# write the header
-					writer.writerow(mbits_per_sec_header)
-
-					# write a row to the csv file
-					writer.writerows(mbits_per_sec)
+				# write to csv file: mbits per seconds
+				csv_writer(CSV_FILE_PATH_MBITS, mbits_per_sec_header, mbits_per_sec)
 				exit(0)
 
 		except Exception as e:
@@ -291,16 +274,11 @@ except KeyboardInterrupt:
 	if os.path.isfile(CSV_FILE_PATH):
 		os.remove(CSV_FILE_PATH)
 
-	# # open the file in the write mode
-	with open(CSV_FILE_PATH, 'w', encoding='UTF8', newline='') as f:
-		# create the csv writer
-		writer = csv.writer(f)
+	# write to csv file: bandwidth usage
+	csv_writer(CSV_FILE_PATH, bw_usage_header, bw_usage)
 
-		# write the header
-		writer.writerow(bw_usage_header)
-
-		# write a row to the csv file
-		writer.writerows(bw_usage)
+	# write to csv file: mbits per seconds
+	csv_writer(CSV_FILE_PATH_MBITS, mbits_per_sec_header, mbits_per_sec)
 
 if _enable_cv_out:
 	# The following frees up resources and closes all windows
@@ -308,5 +286,5 @@ if _enable_cv_out:
 	cv2.destroyAllWindows()
 #########################
 
-# closing Zenoh publisher & session
-z_svc.close_connection(publisher)
+# closing publisher
+publisher.close()
