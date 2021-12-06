@@ -25,6 +25,7 @@ from eagle_zenoh.zenoh_lib.functions import encrypt_str, get_img_fsize_in_float
 import os
 from edp.utils import data_transmission_mode, csv_writer
 from edp.publisher import Publisher
+import requests
 
 # PATH TO Save CSV File
 CSV_FILE_PATH = "./bandwidth_usage.csv"
@@ -52,17 +53,25 @@ parser.add_argument('--video', '-v', dest='video',
                     default="0",
                     type=str,
                     help='The name of the resource to publish.')
-parser.add_argument('--pwidth', dest='pwidth', default=1920, type=int, help='Target width to publish')
-parser.add_argument('--pheight', dest='pheight', default=1080, type=int, help='Target height to publish')
-parser.add_argument('--droneid', dest='droneid', default="1", type=str, help='Drone ID')
+parser.add_argument('--pwidth', '-w', dest='pwidth', default=1280, type=int, help='Target width to publish')
+parser.add_argument('--pheight', '-t', dest='pheight', default=720, type=int, help='Target height to publish')
+# parser.add_argument('--pwidth', dest='pwidth', default=640, type=int, help='Target width to publish')
+# parser.add_argument('--pheight', dest='pheight', default=480, type=int, help='Target height to publish')
+parser.add_argument('--droneid', '-d', dest='droneid', default="1", type=str, help='Drone ID')
 parser.add_argument('--cvout', dest='cvout', action='store_true', help="Use CV Out")
 parser.add_argument('--resize', dest='resize', action='store_true', help="Force resize to FullHD")
 parser.set_defaults(cvout=False)
 parser.set_defaults(resize=False)
 # default
 parser.add_argument('--maxframe', dest='maxframe', default=9999999999, type=int, help='Target max frame to publish')
-parser.add_argument('--quality', dest='quality', default=70, type=int, help='Encoding quality')
+parser.add_argument('--quality', '-q', dest='quality', default=70, type=int, help='Encoding quality')
 parser.add_argument('--tmode', dest='tmode', default="ZENOH", type=str, help='Data transmission mode')
+
+# optional arguments
+# these args are important params for Dynamic Data Publisher project
+parser.add_argument('--puburl', '-u', dest='puburl', default="http://localhost:8888/api", type=str, help='Publisher URL')
+parser.add_argument('--autoupdate', dest='autoupdate', action='store_true', help="Enable updating publisher last update")
+parser.set_defaults(autoupdate=False)
 
 args = parser.parse_args()
 print(args)
@@ -80,6 +89,28 @@ def validate_transmission_mode(tmode):
 		return False
 
 	return True
+
+
+def auto_update_pub_status(root_api="http://localhost:8888/api"):
+	try:
+		post_uri = root_api + "/publisher"
+
+		now = datetime.now()  # current date and time
+		payload = {
+			"last_update": now.strftime("%Y-%m-%d %H:%M:%S")
+		}
+
+		# defining a params dict for the parameters to be sent to the API
+		headers = {"Content-Type": "application/json"}
+
+		# sending get request and saving the response as response object
+		req = requests.post(url=post_uri, json=payload, headers=headers)
+
+		# extracting data in json format
+		resp = req.json()
+
+	except Exception as err:
+		L.warning("[auto_update_pub_status] Sending to API `{}` Failed: {}".format(root_api, err))
 
 
 # Encoding parameter
@@ -101,7 +132,11 @@ if video_path == "0":
 _enable_cv_out = args.cvout
 
 # Initialize publisher configuration setup
-publisher.initialize()
+try:
+	publisher.initialize()
+except AttributeError as err:
+	L.error("Unable to configure Zenoh publisher. Exiting ...")
+	exit(0)
 
 window_title = "img-data-publisher"
 
@@ -234,6 +269,10 @@ try:
 
 			# publish data
 			publisher.publish(itype, val)
+
+			# update
+			if args.autoupdate:
+				auto_update_pub_status(args.puburl)
 
 			if _enable_cv_out:
 				cv2.imshow(window_title, frame)
